@@ -8,6 +8,13 @@ describe("solana-twitter", () => {
     anchor.setProvider(provider);
     const program = anchor.workspace.SolanaTwitter as Program<SolanaTwitter>;
 
+// for fetching all tweet accounts to display to users
+    let tweetAccounts: any[];
+
+    before(async () => {
+        // Fetch all tweet accounts before tests run
+        tweetAccounts = await program.account.tweet.all();
+    });
 
     it('can send a new tweet', async () => {
         // Before sending the transaction to the blockchain.
@@ -106,13 +113,18 @@ describe("solana-twitter", () => {
             await program.rpc.sendTweet(topicWith51Chars, 'Hummus, am I right?', {
                 accounts: {
                     tweet: tweet.publicKey,
-                    author: program.provider.wallet.publicKey,
+                    author: provider.wallet.publicKey,
                     systemProgram: anchor.web3.SystemProgram.programId,
                 },
                 signers: [tweet],
             });
         } catch (error) {
-            assert.equal(error.msg, 'The provided topic should be 50 characters long maximum.');
+            // test fails if this is used
+            //assert.equal(error.msg, 'The provided topic should be 50 characters long maximum.');
+
+            // replacing above assert with
+            assert.ok(error.toString().includes('The provided topic should be 50 characters long maximum.'));
+
             return;
         }
     
@@ -127,17 +139,26 @@ describe("solana-twitter", () => {
             await program.rpc.sendTweet('veganism', contentWith281Chars, {
                 accounts: {
                     tweet: tweet.publicKey,
-                    author: program.provider.wallet.publicKey,
+                    author: provider.wallet.publicKey,
                     systemProgram: anchor.web3.SystemProgram.programId,
                 },
                 signers: [tweet],
             });
         } catch (error) {
-            assert.equal(error.msg, 'The provided content should be 280 characters long maximum.');
+            //assert.equal(error.msg, 'The provided content should be 280 characters long maximum.');
+            assert.ok(error.toString().includes('The provided content should be 280 characters long maximum.'));
+
             return;
         }
     
         assert.fail('The instruction should have failed with a 281-character content.');
+    });
+
+
+    //test scenerio 5
+    it('can fetch all tweets', async () => {
+        const allTweetAccounts = await program.account.tweet.all();
+        assert.equal(allTweetAccounts.length, 3); 
     });
 
 });
