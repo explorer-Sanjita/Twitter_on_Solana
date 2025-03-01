@@ -2,13 +2,15 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { SolanaTwitter } from "../target/types/solana_twitter";
 import * as assert from "assert";
+import * as bs58 from "bs58";
 
 describe("solana-twitter", () => {
     const provider = anchor.AnchorProvider.env();
     anchor.setProvider(provider);
     const program = anchor.workspace.SolanaTwitter as Program<SolanaTwitter>;
 
-// for fetching all tweet accounts to display to users
+    // for fetching all Tweet account ever created to display to users
+
     let tweetAccounts: any[];
 
     before(async () => {
@@ -127,7 +129,7 @@ describe("solana-twitter", () => {
 
             return;
         }
-    
+
         assert.fail('The instruction should have failed with a 51-character topic.');
     });
 
@@ -150,15 +152,47 @@ describe("solana-twitter", () => {
 
             return;
         }
-    
+
         assert.fail('The instruction should have failed with a 281-character content.');
     });
 
 
-    //test scenerio 5
-    it('can fetch all tweets', async () => {
-        const allTweetAccounts = await program.account.tweet.all();
-        assert.equal(allTweetAccounts.length, 3); 
+    //test scenerio 6
+    it('can filter tweets by author', async () => {
+        const authorPublicKey = provider.wallet.publicKey
+        const tweetAccounts = await program.account.tweet.all([
+            {
+                memcmp: {
+                    offset: 8, // Discriminator.
+                    bytes: authorPublicKey.toBase58(),
+                }
+            }
+        ]);
+    
+        assert.equal(tweetAccounts.length, 2);
+        assert.ok(tweetAccounts.every(tweetAccount => {
+            return tweetAccount.account.author.toBase58() === authorPublicKey.toBase58()
+        }))
+    });
+
+    // test scenerio 7 
+    it('can filter tweets by topics', async () => {
+        const tweetAccounts = await program.account.tweet.all([
+            {
+                memcmp: {
+                    offset: 8 + // Discriminator.
+                        32 + // Author public key.
+                        8 + // Timestamp.
+                        4, // Topic string prefix.
+                    bytes: bs58.encode(Buffer.from('SheFi')),
+                }
+            }
+        ]);
+    
+        assert.equal(tweetAccounts.length, 2);
+        assert.ok(tweetAccounts.every(tweetAccount => {
+            return tweetAccount.account.topic === 'SheFi'
+        }))
     });
 
 });
