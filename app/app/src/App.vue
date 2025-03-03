@@ -1,8 +1,22 @@
 <script setup>
 import { useRoute } from 'vue-router'
 import TheSidebar from './components/TheSidebar'
+import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets'
+//The solana-wallets-vue library provides VueJS components that allow the user to select a wallet provider and connect to it. It contains a button to initiate the process, a modal to select the wallet provider and a dropdown that can be used once connected to copy your address, change provider or disconnect.
+import { initWallet } from 'solana-wallets-vue'
+import { initWorkspace } from './composables'
 
 const route = useRoute()
+
+const wallets = [
+    new PhantomWalletAdapter(),
+    new SolflareWalletAdapter(),
+]
+// we set the autoConnect option to true so that it will automatically try to reconnect the user's wallet on page refresh.
+initWallet({ wallets, autoConnect: true })
+// We can now access the workspace data from any component of our application.
+initWorkspace()
+
 </script>
 
 <template>

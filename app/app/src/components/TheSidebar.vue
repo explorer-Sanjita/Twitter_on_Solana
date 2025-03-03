@@ -1,4 +1,32 @@
+<!-- 
+You can access the data provided by the wallet store by using the useWallet composable from the solana-wallets-vue library.
+
+import { useWallet } from 'solana-wallets-vue'
+const data = useWallet()
+
+As long as the initWallet() method was called, this will give you access to properties and methods regarding the connected wallet.
+
+So what do we actually get from useWallet()?
+
+1) wallet. Potentially the most interesting piece of information for us is the user's connected wallet. If the user has connected a wallet, this will be an object containing its public key. Otherwise, this property will be null.
+2) ready, connected, connecting and disconnecting. These are useful booleans for us to understand which state we are in. For instance, we can use the connected boolean to know if the user has connected its wallet or not.
+3) The select, connect and disconnect methods enable us to select, connect to and disconnect from a wallet provider. We don't need to use these methods directly since they are already being used by the wallet UI components we imported earlier.
+4) The sendTransaction, signTransaction, signAllTransactions and signMessage methods enable us to sign messages and/or transactions on behalf of the connected wallet. Whilst we will not use them directly, Anchor requires some of these methods inside its wallet object.
+
+Anchor wallet
+As you can see, useWallet() gives us lots of granular information that can be used to interact with the connected wallet. Because of that, the wallet object it provides is not compatible with Anchor's definition of a wallet. Anchor uses its own "Wallet" object to interact with the connected wallet and sign transactions on its behalf.
+Hence it has incompatibility with the wallet provided by "useWallet()".
+
+SOLUTION of incompatiblity :
+In order to get an object compatible with Anchor's definition of a wallet, we can use yet another composable called useAnchorWallet. This will return a wallet object that can sign transactions.
+
+import { useAnchorWallet } from 'solana-wallets-vue'
+const wallet = useAnchorWallet()
+-->
+
 <script setup>
+import { WalletMultiButton, useAnchorWallet } from 'solana-wallets-vue'
+const { connected } = useAnchorWallet()
 </script>
 
 <template>
@@ -38,8 +66,7 @@
                 </svg>
                 <div class="text-xl hidden md:block">Users</div>
             </router-link>
-            <!-- TODO: Check connected wallet. -->
-            <router-link v-if="true" :to="{ name: 'Profile' }" class="rounded-full hover:bg-gray-100 p-3 md:w-full inline-flex items-center space-x-4" active-class="font-bold" v-slot="{ isActive }">
+            <router-link v-if="connected" :to="{ name: 'Profile' }" class="rounded-full hover:bg-gray-100 p-3 md:w-full inline-flex items-center space-x-4" active-class="font-bold" v-slot="{ isActive }">
                 <svg v-if="isActive" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-700" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
                 </svg>
@@ -50,10 +77,9 @@
             </router-link>
         </div>
         <div class="fixed bottom-8 right-8 md:static w-48 md:w-full">
-            <!-- TODO: Connect wallet -->
-            <div class="bg-pink-500 text-center w-full text-white rounded-full px-4 py-2">
-                Select a wallet
-            </div>
+            <wallet-modal-provider>
+                <wallet-multi-button></wallet-multi-button>
+            </wallet-modal-provider>
         </div>
     </aside>
 </template>
